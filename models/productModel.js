@@ -1,7 +1,7 @@
 const { getPool } = require('../config/dbConfig');
 
 const fetchProducts = async (filters, pagination, sorting) => {
-  const pool = await getPool();  // Ensure the pool is initialized
+  const pool = await getPool();  
   const { searchBy, searchFields } = filters;
   const { limit, offset } = pagination;
   const { orderBy, orderDir } = sorting;
@@ -30,7 +30,7 @@ const fetchProducts = async (filters, pagination, sorting) => {
 
   const params = searchFields.length > 0 ? [...searchFields.map(() => `%${searchBy}%`), offset, limit] : [offset, limit];
 
-  const [rows] = await pool.query(query, params);  // Use pool.query() after initialization
+  const [rows] = await pool.query(query, params);  
   
   // Get total count
   const [countResult] = await pool.query('SELECT COUNT(*) AS count FROM Products');
