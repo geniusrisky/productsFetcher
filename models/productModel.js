@@ -1,45 +1,42 @@
-const pool = require("../config/dbConfig");
+const { getPool } = require('../config/dbConfig');
 
 const fetchProducts = async (filters, pagination, sorting) => {
+  const pool = await getPool();  // Ensure the pool is initialized
   const { searchBy, searchFields } = filters;
   const { limit, offset } = pagination;
   const { orderBy, orderDir } = sorting;
 
-  let searchCondition = "";
+  let searchCondition = '';
   if (searchBy && searchFields.length > 0) {
-    const fieldsCondition = searchFields
-      .map((field) => `${field} LIKE ?`)
-      .join(" OR ");
+    const fieldsCondition = searchFields.map((field) => `${field} LIKE ?`).join(' OR ');
     searchCondition = `WHERE (${fieldsCondition})`;
   }
 
-  const query = `SELECT
-       
-        
-    productId, productName, productImagesName, brandName, description, itemCode, itemType, saleAmount, broshureFileName,
-     vendors, status, createdBy, createdAt, updatedAt, subCategoryId, categoryId, custOrgId,
-     uomId, shippingMethodId,
-        shippingTermId,
-        paymentTermId,
+  const query = `
+    SELECT 
+      productId, productName, imagesUrl, brandName, 
+      description, currency, price, 
+       status, createdAt, 
+      updatedAt, stock, 
+      pricingType, discount, category, subCategory, 
+      organizationId
 
-        FROM ProductV2
-        ${searchCondition}
-        ORDER BY ${orderBy} ${orderDir}
-        LIMIT ? , ?;
-    `;
+  
+    FROM Products
+    ${searchCondition}
+    ORDER BY ${orderBy} ${orderDir}
+    LIMIT ?, ?;
+  `;
 
+  const params = searchFields.length > 0 ? [...searchFields.map(() => `%${searchBy}%`), offset, limit] : [offset, limit];
 
-    const params = searchFields.length > 0 ? [...searchFields.map(()=> `%${searchBy}%`), offset, limit] : [offset, limit];
+  const [rows] = await pool.query(query, params);  // Use pool.query() after initialization
+  
+  // Get total count
+  const [countResult] = await pool.query('SELECT COUNT(*) AS count FROM Products');
+  const count = countResult[0].count;
 
-    const [rows] = await pool.execute(query, params);
-    
-    const [countResult] = await pool.execute('SELECT COUNT(*) AS count FROM ProductV2');
-
-    const count = countResult[0].count;
-
-    return { rows, count };
-
-
+  return { rows, count };
 };
 
-module.exports = { fetchProducts} 
+module.exports = { fetchProducts };
